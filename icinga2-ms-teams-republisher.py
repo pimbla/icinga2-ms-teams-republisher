@@ -12,10 +12,10 @@ CRITICAL = 'CRITICAL'
 UNKNOWN = 'UNKNOWN'
 SERVICE_STATES = [OK, WARNING, CRITICAL, UNKNOWN]
 
-OK_ID = 1
-WARNING_ID = 2
-CRITICAL_ID = 3
-UNKNOWN_ID = 4
+OK_ID = 0
+WARNING_ID = 1
+CRITICAL_ID = 2
+UNKNOWN_ID = 3
 SERVICE_STATE_IDS = [OK_ID, WARNING_ID, CRITICAL_ID, UNKNOWN_ID]
 
 SOFT = 'SOFT'
@@ -83,20 +83,20 @@ class ParamHandler(object):
         service_parameters.add_argument('--service_state',
                                         choices=SERVICE_STATES,
                                         help='Icinga2 service.state.')
-        service_parameters.add_argument('--service_state_id',
+        service_parameters.add_argument('--service_state_id', type=int,
                                         choices=SERVICE_STATE_IDS,
                                         help='Icinga2 service.state_id')
         service_parameters.add_argument('--service_state_type',
                                         choices=STATE_TYPES,
                                         help='Icinga2 service.state_type')
-        service_parameters.add_argument('--service_check_attempt',
+        service_parameters.add_argument('--service_check_attempt', type=int,
                                         help='Icinga2 service.check_attempt')
-        service_parameters.add_argument('--service_max_check_attempts',
+        service_parameters.add_argument('--service_max_check_attempts', type=int,
                                         help='Icinga2 service.max_check_attempts')
         service_parameters.add_argument('--service_last_state',
                                         choices=SERVICE_STATES,
                                         help='Icinga2 service.last_state')
-        service_parameters.add_argument('--service_last_state_id',
+        service_parameters.add_argument('--service_last_state_id', type=int,
                                         choices=SERVICE_STATE_IDS,
                                         help='Icinga2 service.last_state_id')
         service_parameters.add_argument('--service_last_state_type',
@@ -104,19 +104,19 @@ class ParamHandler(object):
                                         help='Icinga2 service.last_state_type')
         service_parameters.add_argument('--service_last_state_change',
                                         help='Icinga2 service.last_state_change')
-        service_parameters.add_argument('--service_downtime_depth',
+        service_parameters.add_argument('--service_downtime_depth', type=int,
                                         help='Icinga2 service.downtime_depth')
-        service_parameters.add_argument('--service_duration_sec',
+        service_parameters.add_argument('--service_duration_sec', type=float,
                                         help='Icinga2 service.duration_sec')
-        service_parameters.add_argument('--service_latency',
+        service_parameters.add_argument('--service_latency', type=float,
                                         help='Icinga2 service.latency')
-        service_parameters.add_argument('--service_execution_time',
+        service_parameters.add_argument('--service_execution_time', type=float,
                                         help='Icinga2 service.execution_time')
         service_parameters.add_argument('--service_output',
                                         help='Icinga2 service.output')
         service_parameters.add_argument('--service_perfdata',
                                         help='Icinga2 service.perfdata')
-        service_parameters.add_argument('--service_last_check',
+        service_parameters.add_argument('--service_last_check', type=int,
                                         help='Icinga2 service.last_check')
         service_parameters.add_argument('--service_check_source',
                                         help='Icinga2 service.check_source')
@@ -130,20 +130,20 @@ class ParamHandler(object):
         host_parameters.add_argument('--host_state',
                                      choices=HOST_STATES,
                                      help='Icinga2 host.state.')
-        host_parameters.add_argument('--host_state_id',
+        host_parameters.add_argument('--host_state_id', type=int,
                                      choices=SERVICE_STATE_IDS,
                                      help='Icinga2 host.state_id')
         host_parameters.add_argument('--host_state_type',
                                      choices=STATE_TYPES,
                                      help='Icinga2 host.state_type')
-        host_parameters.add_argument('--host_check_attempt',
+        host_parameters.add_argument('--host_check_attempt', type=int,
                                      help='Icinga2 host.check_attempt')
-        host_parameters.add_argument('--host_max_check_attempts',
+        host_parameters.add_argument('--host_max_check_attempts', type=int,
                                      help='Icinga2 host.max_check_attempts')
         host_parameters.add_argument('--host_last_state',
                                      choices=HOST_STATES,
                                      help='Icinga2 host.last_state')
-        host_parameters.add_argument('--host_last_state_id',
+        host_parameters.add_argument('--host_last_state_id', type=int,
                                      choices=SERVICE_STATE_IDS,
                                      help='Icinga2 host.last_state_id')
         host_parameters.add_argument('--host_last_state_type',
@@ -151,32 +151,32 @@ class ParamHandler(object):
                                      help='Icinga2 host.last_state_type')
         host_parameters.add_argument('--host_last_state_change',
                                      help='Icinga2 host.last_state_change')
-        host_parameters.add_argument('--host_downtime_depth',
+        host_parameters.add_argument('--host_downtime_depth', type=int,
                                      help='Icinga2 host.downtime_depth')
-        host_parameters.add_argument('--host_duration_sec',
+        host_parameters.add_argument('--host_duration_sec', type=float,
                                      help='Icinga2 host.duration_sec')
-        host_parameters.add_argument('--host_latency',
+        host_parameters.add_argument('--host_latency', type=float,
                                      help='Icinga2 host.latency')
-        host_parameters.add_argument('--host_execution_time',
+        host_parameters.add_argument('--host_execution_time', type=float,
                                      help='Icinga2 host.execution_time')
         host_parameters.add_argument('--host_output',
                                      help='Icinga2 host.output')
         host_parameters.add_argument('--host_perfdata',
                                      help='Icinga2 host.perfdata')
-        host_parameters.add_argument('--host_last_check',
+        host_parameters.add_argument('--host_last_check', type=int,
                                      help='Icinga2 host.last_check')
         host_parameters.add_argument('--host_check_source',
                                      help='Icinga2 host.check_source')
 
-        host_parameters.add_argument('--host_num_services',
+        host_parameters.add_argument('--host_num_services', type=int,
                                      help='Icinga2 service.num_services')
-        host_parameters.add_argument('--host_num_services_ok',
+        host_parameters.add_argument('--host_num_services_ok', type=int,
                                      help='Icinga2 service.num_services_ok')
-        host_parameters.add_argument('--host_num_services_warning',
+        host_parameters.add_argument('--host_num_services_warning', type=int,
                                      help='Icinga2 service.num_services_warning')
-        host_parameters.add_argument('--host_num_services_unknown',
+        host_parameters.add_argument('--host_num_services_unknown', type=int,
                                      help='Icinga2 service.num_services_unknown')
-        host_parameters.add_argument('--host_num_services_critical',
+        host_parameters.add_argument('--host_num_services_critical', type=int,
                                      help='Icinga2 service.num_services_critical')
 
         self.args = self._argp.parse_args()
@@ -200,7 +200,7 @@ class Message(object):
     '''
 
     def __init__(self, params):
-        emoji = vars(params)['emoji_{}'.format(params.notification_type)]
+        emoji = vars(params)['emoji_{}'.format(params.notification_type.lower())]
         service_name = f"{params.service_name} " if \
             params.notification_target == SERVICE else ''
         state = f"{params.service_state} " if \
