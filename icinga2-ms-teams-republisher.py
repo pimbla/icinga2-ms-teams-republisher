@@ -200,24 +200,31 @@ class Message(object):
     '''
 
     def __init__(self, params):
-        emoji = vars(params)['emoji_{}'.format(params.notification_type.lower())]
-        service_name = f"{params.service_name} " if \
+        self.message = pymsteams.connectorcard(params.webhook_url)
+
+        _emoji = vars(params)['emoji_{}'.format(params.notification_type.
+                                                lower())]
+        _notification_type = params.notification_type
+        _host_name = params.host_display_name
+
+        _service_name = f"{params.service_name} " if \
             params.notification_target == SERVICE else ''
-        state = f"{params.service_state} " if \
+
+        _state = f"{params.service_state} " if \
             params.notification_target == SERVICE \
             else f"{params.host_state} "
 
-        message = pymsteams.connectorcard(params.webhook_url)
-        message.title(f"{emoji} {params.notification_type}: "
-                      f"{params.host_display_name} {service_name} is {state}")
+        self.message.text(f"{_emoji} {params.notification_type}: "
+                          f"{params.host_display_name} {_service_name} is "
+                          f"{_state} {_emoji}")
 
-        message.text("🔥TODO")
-        message.send()
+    def send(self):
+        self.message.send()
 
 
 def main():
     params = ParamHandler().args
-    Message(params)
+    Message(params).send()
 
 
 if __name__ == "__main__":
