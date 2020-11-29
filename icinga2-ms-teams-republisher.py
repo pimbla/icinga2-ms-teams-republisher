@@ -230,7 +230,6 @@ class Message(object):
 
         _emoji = vars(params)['emoji_{}'.format(params.notification_type.
                                                 lower())]
-        _notification_type = params.notification_type
 
         _target_name = f"{params.service_name}" if \
             params.notification_target == SERVICE else params.host_display_name
@@ -242,13 +241,21 @@ class Message(object):
         _state = f"{params.service_state}" if \
             params.notification_target == SERVICE \
             else f"{params.host_state}"
+        
+        _output = f"{params.service_output}" if \
+            params.notification_target == SERVICE \
+            else f"{params.host_output}"
+        _output = (_output[:95] + ' [...]') if len(_output) > 95 else _output
 
-        self.message.text(f"<strong>{params.notification_type}</strong> on Host"
+        self.message.text(f"<strong>{params.notification_type}</strong> on Host "
                           f"<strong>{params.host_display_name}</strong>")
 
-        message_sections = [f"{_emoji} {params.notification_target.upper()} "
-                            f"<strong>{_target_name}</strong> is "
-                            f"{_state.upper()} {_emoji}"]
+        message_sections = [f"<strong>{params.notification_target.title()} Name</strong>:  "
+                            f"{_target_name}\n\n"
+                            f"<strong>{params.notification_target.title()} State</strong>:   "
+                            f"{_emoji} {_state.upper()} {_emoji}\n\n"
+                            f"<strong>{params.notification_target.title()} Output</strong>: "
+                            f"{_output}"]
 
         self.message.color(STATE_COLORS[_state.upper()])
 
