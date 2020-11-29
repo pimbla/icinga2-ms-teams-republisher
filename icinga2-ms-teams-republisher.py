@@ -207,7 +207,7 @@ class ParamHandler(object):
                                      help='Icinga2 host.check_source')
 
         host_parameters.add_argument('--host_num_services', type=int,
-                                     help='Icinga2 service.num_services')
+                                     help='Icinga2 host.num_services')
         host_parameters.add_argument('--host_num_services_ok', type=int,
                                      help='Icinga2 service.num_services_ok')
         host_parameters.add_argument('--host_num_services_warning', type=int,
@@ -268,7 +268,10 @@ class GrafanaHandler(object):
                     new_block = False
 
     def get_url(self):
-        dashboard, panel_id = self._graph_identifier[self._target_command]
+        try:
+            dashboard, panel_id = self._graph_identifier[self._target_command]
+        except KeyError:
+            raise KeyError
         return f"{self._grafana_base_url}/dashboard/db/{dashboard}" \
                f"?var-hostname={self._host_name}" \
                f"&var-service=self._service_name" \
@@ -332,7 +335,10 @@ class Message(object):
                                              params.host_name,
                                              params.service_name,
                                              _command)
-            self.message.addLinkButton("Grafana", grafana_handler.get_url())
+            try:
+                self.message.addLinkButton("Grafana", grafana_handler.get_url())
+            except KeyError as e:
+                logging.critical(str(e))
             
         self.message.color(STATE_COLORS[_state.upper()])
 
