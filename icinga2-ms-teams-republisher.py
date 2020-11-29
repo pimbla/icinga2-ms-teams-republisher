@@ -66,6 +66,10 @@ class ParamHandler(object):
         self._argp.add_argument('-v', '--verbosity', action='count', default=0)
         self._argp.add_argument('--webhook_url', help='Incoming webhook URL',
                                 required=True)
+        self._argp.add_argument('--icinga2_url', help='Icinga2 base URL. E.g.:'
+                                                      'https://icinga2.XYZ.TLD')
+        self._argp.add_argument('--grafana_url', help='Icinga2 base URL. E.g.:'
+                                                      'https://grafana.XYZ.TLD')
         self._argp.add_argument('--notification_target',
                                 choices=[HOST, SERVICE],
                                 required=True)
@@ -247,6 +251,12 @@ class Message(object):
             else f"{params.host_output}"
         _output = (_output[:95] + ' [...]') if len(_output) > 95 else _output
 
+        _icinga2_url = f"{params.icinga2_url}/monitoring/host/"
+
+        _icinga2_url += f"services?host={params.host_name}&service={params.service_name}" if \
+                        params.notification_target == SERVICE \
+                        else f"show?host={params.host_name}"
+
         self.message.text(f"<strong>{params.notification_type}</strong> on Host "
                           f"<strong>{params.host_display_name}</strong>")
 
@@ -256,6 +266,13 @@ class Message(object):
                             f"{_emoji} {_state.upper()} {_emoji}\n\n"
                             f"<strong>{params.notification_target.title()} Output</strong>: "
                             f"{_output}"]
+
+        if params.icinga2_url:
+            _icinga2_url = f"{params.icinga2_url}/monitoring/host/"
+            _icinga2_url += f"services?host={params.host_name}&service={params.service_name}" if \
+                            params.notification_target == SERVICE \
+                            else f"show?host={params.host_name}"
+            self.message.addLinkButton("Icinga2", _icinga2_url)
 
         self.message.color(STATE_COLORS[_state.upper()])
 
