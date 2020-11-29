@@ -18,6 +18,12 @@ CRITICAL_ID = 2
 UNKNOWN_ID = 3
 SERVICE_STATE_IDS = [OK_ID, WARNING_ID, CRITICAL_ID, UNKNOWN_ID]
 
+OK_COLOR = '#00FF00'
+WARNING_COLOR = '#FFA500'
+CRITICAL_COLOR = '#FF0000'
+UNKNOWN_COLOR = '#800080'
+SERVICE_STATE_COLORS = [OK_COLOR, WARNING_COLOR, CRITICAL_COLOR, UNKNOWN_COLOR]
+
 SOFT = 'SOFT'
 HARD = 'HARD'
 STATE_TYPES = [SOFT, HARD]
@@ -27,10 +33,25 @@ DOWN = 'DOWN'
 UNREACHABLE = 'UNREACHABLE'
 HOST_STATES = [UP, DOWN, UNREACHABLE]
 
+UP_COLOR = '#39FF14'
+DOWN_COLOR = '#Bb0000'
+UNREACHABLE_COLOR = '#BC13FE'
+HOST_STATE_COLORS = [UP_COLOR, DOWN_COLOR, UNREACHABLE_COLOR]
+
 UP_ID = 0
 DOWN_ID = 1
 UNREACHABLE_ID = 2
 HOST_STATE_IDS = [UP_ID, DOWN_ID, UNREACHABLE_ID]
+
+STATE_COLORS = {
+    OK: OK_COLOR,
+    WARNING: WARNING_COLOR,
+    CRITICAL: CRITICAL_COLOR,
+    UNKNOWN: UNKNOWN_COLOR,
+    UP: UP_COLOR,
+    DOWN: DOWN_COLOR,
+    UNREACHABLE: UNKNOWN_COLOR
+}
 
 
 class ParamHandler(object):
@@ -68,8 +89,8 @@ class ParamHandler(object):
                                 default='❕')
         # https://www.unicode.org/emoji/charts-beta/full-emoji-list.html#26a0
         self._argp.add_argument('--emoji_warning', help='Markup String for '
-                                                       'Icinga2 transition '
-                                                       'type Warning',
+                                                        'Icinga2 transition '
+                                                        'type Warning',
                                 default='⚠')
 
         self._argp.add_argument('--notification_type',
@@ -218,15 +239,18 @@ class Message(object):
         _target_name = _target_name.replace('service_apply_', '').\
             replace('_', '-')
 
-        _state = f"{params.service_state} " if \
+        _state = f"{params.service_state}" if \
             params.notification_target == SERVICE \
-            else f"{params.host_state} "
+            else f"{params.host_state}"
 
-        self.message.text(f"<strong>{params.notification_type}</strong>: "
+        self.message.text(f"<strong>{params.notification_type}</strong> on Host"
                           f"<strong>{params.host_display_name}</strong>")
-        message_sections = [f"{_emoji}{params.notification_target.upper()}"
+
+        message_sections = [f"{_emoji} {params.notification_target.upper()} "
                             f"<strong>{_target_name}</strong> is "
                             f"{_state.upper()} {_emoji}"]
+
+        self.message.color(STATE_COLORS[_state.upper()])
 
         for section in message_sections:
             s = pymsteams.cardsection()
