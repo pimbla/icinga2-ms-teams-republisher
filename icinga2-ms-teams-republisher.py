@@ -2,6 +2,7 @@
 import argparse
 import logging
 import pymsteams
+from pathlib import Path
 
 HOST = 'host'
 SERVICE = 'service'
@@ -70,6 +71,9 @@ class ParamHandler(object):
                                                       'https://icinga2.XYZ.TLD')
         self._argp.add_argument('--grafana_url', help='Icinga2 base URL. E.g.:'
                                                       'https://grafana.XYZ.TLD')
+        self._argp.add_argument('--icingaweb_graph_ini_path', help='Path to the '
+                                                      'file containing the '
+                                                      'Icingaweb2 Graph config')
         self._argp.add_argument('--notification_target',
                                 choices=[HOST, SERVICE],
                                 required=True)
@@ -107,7 +111,8 @@ class ParamHandler(object):
         # Available service runtime macros. Will be autofilled by Icinga2.
         # see https://icinga.com/docs/icinga2/latest/doc/03-monitoring-basics/#service-runtime-macros
         service_parameters.add_argument('--service_name',
-                                        help='Icinga2 service.name')
+                                        help='Icinga2 service.name',
+                                        required=True)
         service_parameters.add_argument('--service_display_name',
                                         help='Icinga2 service.display_name')
         service_parameters.add_argument('--service_state',
@@ -150,11 +155,14 @@ class ParamHandler(object):
                                         help='Icinga2 service.last_check')
         service_parameters.add_argument('--service_check_source',
                                         help='Icinga2 service.check_source')
+        service_parameters.add_argument('--service_check_command',
+                                        help='Icinga2 service.check_command')
 
         # Available host runtime macros. Will be autofilled by Icinga2.
         # see https://icinga.com/docs/icinga2/latest/doc/03-monitoring-basics/#host-runtime-macros
         host_parameters.add_argument('--host_name',
-                                     help='Icinga2 host.name')
+                                     help='Icinga2 host.name',
+                                     required=True)
         host_parameters.add_argument('--host_display_name',
                                      help='Icinga2 host.display_name')
         host_parameters.add_argument('--host_state',
@@ -208,6 +216,8 @@ class ParamHandler(object):
                                      help='Icinga2 service.num_services_unknown')
         host_parameters.add_argument('--host_num_services_critical', type=int,
                                      help='Icinga2 service.num_services_critical')
+        service_parameters.add_argument('--host_check_command',
+                                        help='Icinga2 host.check_command')
 
         self.args = self._argp.parse_args()
 
@@ -221,13 +231,53 @@ class ParamHandler(object):
             logging.basicConfig(level=logging.CRITICAL)
 
 
+class GrafanaHandler(object):
+    '''
+    [check_command_toru_disk]
+    dashboard = "toru-overview"
+    panelId = "12"
+
+    '''
+    def __init__(self, grafana_base_url, fp_graph_ini, host_name,
+                 service_name, target_command, time=1):
+
+        self._host_name = host_name
+        self._service_name = service_name
+        self._graph_identifier = {}
+        self._grafana_base_url = grafana_base_url
+        self._target_command = target_command
+        self._time = time
+
+        if Path(fp_graph_ini).is_file():
+            with open(fp_graph_ini, 'r') as f:
+                new_block = False
+                for line in f:
+                    line = line.strip()
+                    if new_block:
+                        if line.startswith('[') & line.endswith(']'):
+                            command = line[1:-1]
+                            dashboard = next(f).split(' = ')[1].strip().\
+                                replace("\"", '')
+                            panel_id = next(f).split(' = ')[1].strip().\
+                                replace("\"", '')
+                            self._graph_identifier[command] = \
+                                (dashboard, panel_id)
+                    if not line:
+                        new_block = True
+                        continue
+                    new_block = False
+
+    def get_url(self):
+        dashboard, panel_id = self._graph_identifier[self._target_command]
+        return f"{self._grafana_base_url}/dashboard/db/{dashboard}" \
+               f"?var-hostname={self._host_name}" \
+               f"&var-service=self._service_name" \
+               f"&from=now-{self._time}h" \
+               f"&to=now&panelId={panel_id}" \
+               f"&fullscreen"
+
+
 class Message(object):
-    '''
-    <EMOJI> <NOTIFICATION TYPE>: <HOSTNAME> [<SERVICENAME>] is [<SERVICE-STATE> | <HOST-STATE>]
-    [BUTTON-ICINGA], [BUTTON-GRAFANA]
-        [OPTIONAL]
-        > Various Metrics
-    '''
 
     def __init__(self, params):
         self.message = pymsteams.connectorcard(params.webhook_url)
@@ -237,10 +287,13 @@ class Message(object):
 
         _target_name = f"{params.service_name}" if \
             params.notification_target == SERVICE else params.host_display_name
-
         # First replace for readablility, second to prevent auto-markdown
         _target_name = _target_name.replace('service_apply_', '').\
             replace('_', '-')
+
+        _command = params.service_check_command if \
+            params.notification_target == SERVICE \
+            else params.host_check_command
 
         _state = f"{params.service_state}" if \
             params.notification_target == SERVICE \
@@ -251,29 +304,36 @@ class Message(object):
             else f"{params.host_output}"
         _output = (_output[:95] + ' [...]') if len(_output) > 95 else _output
 
-        _icinga2_url = f"{params.icinga2_url}/monitoring/host/"
-
-        _icinga2_url += f"services?host={params.host_name}&service={params.service_name}" if \
-                        params.notification_target == SERVICE \
-                        else f"show?host={params.host_name}"
-
-        self.message.text(f"<strong>{params.notification_type}</strong> on Host "
+        self.message.text(f"<strong>{params.notification_type}</strong> "
+                          f"on Host "
                           f"<strong>{params.host_display_name}</strong>")
 
-        message_sections = [f"<strong>{params.notification_target.title()} Name</strong>:  "
+        message_sections = [f"<strong>{params.notification_target.title()} "
+                            f"Name</strong>:  "
                             f"{_target_name}\n\n"
-                            f"<strong>{params.notification_target.title()} State</strong>:   "
+                            f"<strong>{params.notification_target.title()} "
+                            f"State</strong>:   "
                             f"{_emoji} {_state.upper()} {_emoji}\n\n"
-                            f"<strong>{params.notification_target.title()} Output</strong>: "
+                            f"<strong>{params.notification_target.title()} "
+                            f"Output</strong>: "
                             f"{_output}"]
 
         if params.icinga2_url:
             _icinga2_url = f"{params.icinga2_url}/monitoring/host/"
-            _icinga2_url += f"services?host={params.host_name}&service={params.service_name}" if \
+            _icinga2_url += f"services?host={params.host_name}" \
+                            f"&service={params.service_name}" if \
                             params.notification_target == SERVICE \
                             else f"show?host={params.host_name}"
             self.message.addLinkButton("Icinga2", _icinga2_url)
 
+        if params.grafana_url:
+            grafana_handler = GrafanaHandler(params.grafana_url,
+                                             params.icingaweb_graph_ini_path,
+                                             params.host_name,
+                                             params.service_name,
+                                             _command)
+            self.message.addLinkButton("Grafana", grafana_handler.get_url())
+            
         self.message.color(STATE_COLORS[_state.upper()])
 
         for section in message_sections:
