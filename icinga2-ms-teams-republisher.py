@@ -49,23 +49,28 @@ class ParamHandler(object):
                                 choices=[HOST, SERVICE],
                                 required=True)
 
-        # unicode directly copied from link below:
         # https://www.unicode.org/emoji/charts-beta/full-emoji-list.html#1f525
         self._argp.add_argument('--emoji_problem', help='Markup String for '
                                                         'Icinga2 Transition '
                                                         'type Problem',
                                 default='🔥')
 
-        # unicode directly copied from link below:
         # https://www.unicode.org/emoji/charts-beta/full-emoji-list.html#2705
         self._argp.add_argument('--emoji_recovery', help='Markup String for '
                                                          'Icinga2 transition '
                                                          'type Recovery',
                                 default='✅')
+
+        # https://www.unicode.org/emoji/charts-beta/full-emoji-list.html#2755
         self._argp.add_argument('--emoji_custom', help='Markup String for '
                                                        'Icinga2 transition '
                                                        'type Custom',
                                 default='❕')
+        # https://www.unicode.org/emoji/charts-beta/full-emoji-list.html#26a0
+        self._argp.add_argument('--emoji_warning', help='Markup String for '
+                                                       'Icinga2 transition '
+                                                       'type Warning',
+                                default='⚠')
 
         self._argp.add_argument('--notification_type',
                                 help='Icinga2 notification.type')
@@ -205,26 +210,35 @@ class Message(object):
         _emoji = vars(params)['emoji_{}'.format(params.notification_type.
                                                 lower())]
         _notification_type = params.notification_type
-        _host_name = params.host_display_name
 
-        _service_name = f"{params.service_name} " if \
-            params.notification_target == SERVICE else ''
+        _target_name = f"{params.service_name}" if \
+            params.notification_target == SERVICE else params.host_display_name
+
+        # First replace for readablility, second to prevent auto-markdown
+        _target_name = _target_name.replace('service_apply_', '').\
+            replace('_', '-')
 
         _state = f"{params.service_state} " if \
             params.notification_target == SERVICE \
             else f"{params.host_state} "
 
-        self.message.text(f"{_emoji} {params.notification_type}: "
-                          f"{params.host_display_name} {_service_name} is "
-                          f"{_state} {_emoji}")
+        self.message.text(f"<strong>{params.notification_type}</strong>: "
+                          f"<strong>{params.host_display_name}</strong>")
+        message_sections = [f"{_emoji}{params.notification_target.upper()}"
+                            f"<strong>{_target_name}</strong> is "
+                            f"{_state.upper()} {_emoji}"]
+
+        for section in message_sections:
+            s = pymsteams.cardsection()
+            s.text(section)
+            self.message.addSection(s)
 
     def send(self):
         self.message.send()
 
 
 def main():
-    params = ParamHandler().args
-    Message(params).send()
+    Message(ParamHandler().args).send()
 
 
 if __name__ == "__main__":
